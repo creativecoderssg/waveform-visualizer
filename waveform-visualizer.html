@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - waveform visualizer</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #222;
+				margin: 0px;
+				overflow: hidden;
+			}
+			a {
+				color: #f80;
+			}
+		</style>
+	</head>
+
+	<body>
+
+		<script src="three.min.js"></script>
+		<script src="TrackballControls.js"></script>
+		<script src="waveform-visualizer.js"></script>
+
+		<script>
+
+			var container;
+
+			var camera, scene, renderer, controls;
+
+			var meshes;
+
+			var SPACE = 10;
+			var COUNT = 150;
+			var slices;
+
+			init();
+			animate();
+
+			function init() {
+
+				var info = document.createElement( 'div' );
+				info.style.position = 'absolute';
+				info.style.top = '10px';
+				info.style.width = '100%';
+				info.style.textAlign = 'center';
+				info.style.color = '#fff';
+				info.style.link = '#f80';
+				info.innerHTML = '<a href="http://threejs.org" target="_blank">three.js</a> webgl - audio waveform';
+				document.body.appendChild( info );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( 0x222222 );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				scene = new THREE.Scene();
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000000 );
+				camera.position.set( 0, 0, 800 );
+
+				controls = new THREE.TrackballControls( camera, renderer.domElement );
+				controls.minDistance = 200;
+				controls.maxDistance = 1500;
+
+				scene.add( new THREE.AmbientLight( 0x222222 ) );
+
+				var light = new THREE.PointLight( 0xffffff );
+				light.position.copy( camera.position );
+				scene.add( light );
+
+				light = new THREE.PointLight( 0xffffff );
+				light.position.set( 100, 100, 100 );
+				scene.add( light );
+
+				//
+
+				var geometry = new THREE.BoxGeometry(4, 200, 200);
+
+				// var material = new THREE.MeshLambertMaterial( { color: 0xb00000, wireframe: false } );
+				var material = new THREE.MeshLambertMaterial( { color: 0xff8000, wireframe: false } );
+
+				var mesh;
+
+				slices = new THREE.Object3D();
+				window.ss = slices;
+				scene.add( slices );
+
+
+				meshes = slices.children;
+
+				
+
+				for (var i = 0; i < COUNT; i++) {
+
+					mesh = new THREE.Mesh( geometry, material );
+					material = new THREE.MeshLambertMaterial( { color: 0xff8000, wireframe: false } );
+
+					slices.add( mesh );
+
+					mesh.position.x = (i - COUNT / 2) * SPACE;
+
+				}
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				controls.update();
+
+				if (!sampled) return;
+
+				var whichPixel = Math.max(0, audio.currentTime * SAMPLES_PER_SECOND  | 0);
+				var startIndex = Math.max(0, whichPixel - COUNT / 2 | 0);
+
+				var current = 0;
+
+
+				for (i = 0 ; i < COUNT; i ++) {
+
+					var v = sampled[startIndex + i];
+					meshes[i].scale.y = v * 10;
+					meshes[i].scale.z = v * 10;
+
+					if (Math.abs(startIndex + i - whichPixel) == 0) current = sampled[startIndex + i];
+
+					if (Math.abs(startIndex + i - whichPixel) < 10) {
+						meshes[i].material.color.setHex(0xff0000); // 0xff8000 0xff0000
+					} else {
+						meshes[i].material.color.setHex(0x333333);  // 0x333333
+					}
+				}
+
+				// slices.rotation.x += current * 0.1;
+				slices.rotation.x += 0.01;
+				slices.scale.y = slices.scale.z = 0.5 + current;
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+
+</html>
